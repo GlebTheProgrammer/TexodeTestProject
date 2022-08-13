@@ -7,6 +7,7 @@ namespace Server.Interfaces
     public interface IInformationCardRepo
     {
         public IEnumerable<InformationCard> GetAllInformationCards();
+        public string GetAllInformationCardsAsStr();
         public InformationCard GetInformationCardById(int id);
         public void CreateInformationCard(InformationCard card);
         public void UpdateInformationCard(int id, InformationCardUpdateDto card);

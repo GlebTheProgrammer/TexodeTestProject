@@ -42,6 +42,11 @@ namespace Server.Data
             return context.Deserialize().ToList();
         }
 
+        public string GetAllInformationCardsAsStr()
+        {
+            return context.DeserializeIntoStr();
+        }
+
         public InformationCard GetInformationCardById(int id)
         {
             return context.Deserialize().ToList().FirstOrDefault(card => card.Id == id);

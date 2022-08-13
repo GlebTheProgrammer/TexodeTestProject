@@ -20,6 +20,22 @@ namespace Server.DataAccess
 
         }
 
+        public string DeserializeIntoStr()
+        {
+            string fileName = "../Server/Files/DataFile.json";
+
+            if (File.Exists(fileName))
+            {
+                using (StreamReader r = new StreamReader(fileName))
+                {
+                    string json = r.ReadToEnd();
+
+                    return json == null ? string.Empty : json;
+                }
+            }
+            return null;
+        }
+
         public bool Serialize(IEnumerable<InformationCard> cards)
         {
             try
@@ -37,5 +53,7 @@ namespace Server.DataAccess
                 return false;
             }
         }
+
+
     }
 }

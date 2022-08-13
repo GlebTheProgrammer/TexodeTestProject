@@ -16,15 +16,15 @@
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            
+
             <!--Left Menu-->
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                
-                
+
+
                 <!--Menu Icon-->
                 <Button Margin="20 28 0 35" Style="{StaticResource topButton}">
                     <Icon:PackIconMaterial Kind="Menu" Width="15" Height="15"/>
@@ -41,7 +41,7 @@
                                 </Ellipse.Fill>
                             </Ellipse>
                         </Border>
-                        
+
                         <!--Menu Titles-->
                         <TextBlock Text="Cards Storage" Foreground="White" FontSize="20" FontWeight="SemiBold"
                                    DockPanel.Dock="Top" TextAlignment="Center" Margin="5 25 0 10"/>
@@ -50,7 +50,7 @@
 
                         <!--Menu Separator-->
                         <Separator Margin="25" DockPanel.Dock="Top" Height="0.8" Background="#7e5fdc"/>
-                        
+
                         <!--Menu Buttons-->
                         <StackPanel DockPanel.Dock="Top">
                             <Button x:Name="Dashboard_Btn" Style="{StaticResource menuButton}" Click="Dashboard_Btn_Click">
@@ -87,7 +87,7 @@
                                     <TextBlock Text="Connection"/>
                                 </StackPanel>
                             </Button>
-                            
+
                         </StackPanel>
 
                         <Button x:Name="Logout_Btn" Style="{StaticResource menuButton}" VerticalAlignment="Bottom" DockPanel.Dock="Bottom" Margin="15 0 15 20" Click="Logout_Btn_Click">
@@ -100,10 +100,10 @@
                     </DockPanel>
                 </Border>
             </Grid>
-            
-            
+
+
             <!--Main Section for Dashboard-->
-            <Grid x:Name="dashboard_section" Grid.Column="1" Margin="30 20 20 20" Visibility="Visible">
+            <Grid x:Name="dashboard_section" Grid.Column="1" Margin="30 20 20 20" Visibility="Hidden">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
@@ -169,7 +169,7 @@
                 <!--Cards Datagrid-->
                 <DataGrid Style="{DynamicResource DataGridStyle1}" CellStyle="{DynamicResource DataGridCellStyle1}" ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyle1}" RowStyle="{DynamicResource DataGridRowStyle1}" Grid.Row="5" x:Name="informationCardsDataGrid">
                     <DataGrid.Columns>
-                        
+
                         <DataGridCheckBoxColumn CanUserResize="False" Width="auto" ElementStyle="{StaticResource CheckBoxStyle1}" Binding="{Binding IsSelected}">
                             <DataGridCheckBoxColumn.HeaderTemplate>
                                 <DataTemplate>
@@ -285,7 +285,7 @@
 
             <!--Main Section for Updating Existing Cards-->
             <Grid x:Name="updatingExistingCard_section" Grid.Column="1" Margin="30 20 20 20" Visibility="Hidden">
-                
+
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
@@ -296,7 +296,7 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                
+
                 <TextBlock x:Name="existingCardIndex_TextBlock" Visibility="Hidden" Text=""/>
 
                 <TextBlock Text="Edit An Existing Information Card" Grid.Row="1" FontSize="32" FontWeight="SemiBold" Margin="0 60 0 0"
@@ -306,7 +306,7 @@
                            HorizontalAlignment="Left" Foreground="#121518"/>
 
                 <Grid Width="300" HorizontalAlignment="Left" Grid.Row="3">
-                    
+
                     <TextBox x:Name="textboxExistingCardName" Style="{StaticResource inputTextbox}"/>
 
                 </Grid>
@@ -336,25 +336,36 @@
             </Grid>
 
             <!--Main Section for Connection-->
-            <Grid x:Name="connection_section" Grid.Column="1" Margin="30 20 20 20" Visibility="Hidden">
+            <Grid x:Name="connection_section" Grid.Column="1" Margin="30 20 20 20" Visibility="Visible">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                    
+                    <RowDefinition/>
                 </Grid.RowDefinitions>
 
                 <!--Page Title-->
-                <TextBlock Text="Connection Status" Grid.Row="1" FontSize="32" FontWeight="SemiBold" Margin="0 20 0 0"
-                           HorizontalAlignment="Left" Foreground="#121518"/>
+                <TextBlock Text="Connection Status" Grid.Row="1" FontSize="32" FontWeight="SemiBold" Margin="0 60 0 0"
+                           HorizontalAlignment="Left" Foreground="#121518" Grid.RowSpan="2" Width="264"/>
 
                 <!--Page Title-->
-                <TextBlock Text="503" Grid.Row="3" FontSize="64" FontWeight="SemiBold" Margin="0 -65 0 0"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Red"/>
+                <TextBlock x:Name="connection_StatusCode" Text="000" Grid.Row="2" FontSize="64" FontWeight="SemiBold" VerticalAlignment="Center"
+                            Foreground="Black" Height="85" Width="106"/>
 
-                <TextBlock Text="Server Is Currently Unavailable" Grid.Row="3" FontSize="44" FontWeight="SemiBold" Margin="0 65 0 0"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Red"/>
+                <TextBlock x:Name="connection_StatusHeader" Text="Connect To The Server To Continue" Grid.Row="3" FontSize="16" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black" Height="58" Width="auto" TextWrapping="Wrap"/>
 
 
+                <Button x:Name="Connect_Btn" Grid.Row="4" Style="{StaticResource connectionButton}" Click="Connect_Btn_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Icon:PackIconMaterial Kind="LanConnect" VerticalAlignment="Center" Width="22" Height="22" Margin="0 1 8 0"/>
+                        <TextBlock Text="Connect"/>
+                    </StackPanel>
+                </Button>
             </Grid>
 
         </Grid>

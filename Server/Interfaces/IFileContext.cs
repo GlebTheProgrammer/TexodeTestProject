@@ -6,5 +6,7 @@ namespace Server.Interfaces
     {
         public IEnumerable<InformationCard> Deserialize();
         public bool Serialize(IEnumerable<InformationCard> cards);
+
+        public string DeserializeIntoStr();
     }
 }

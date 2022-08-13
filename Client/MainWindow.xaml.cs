@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -375,5 +376,48 @@ namespace Client
         }
 
         //#endregion
+
+
+        #region Connect To The Server Methods
+
+        private async void Connect_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            using(HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage? response = null;
+                try
+                {
+                    response = await client.GetAsync("http://localhost:63697/api/InformationCards/AsAString");
+                }
+                catch(HttpRequestException ex)
+                {
+                    connection_StatusCode.Foreground = Brushes.Red;
+                    connection_StatusCode.Text = "503";
+
+                    connection_StatusHeader.Foreground = Brushes.Red;
+                    connection_StatusHeader.Text = ex.Message;
+
+                    return;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                if(response.IsSuccessStatusCode)
+                {
+                    connection_StatusHeader.Text = await response.Content.ReadAsStringAsync();
+                }
+                else
+                {
+                    connection_StatusCode.Foreground = Brushes.Red;
+                    connection_StatusCode.Text = response.StatusCode.ToString();
+
+                    connection_StatusHeader.Foreground = Brushes.Red;
+                    connection_StatusHeader.Text = response.Headers.ToString();
+                }
+            }
+        }
+
+
+        #endregion
     }
 }

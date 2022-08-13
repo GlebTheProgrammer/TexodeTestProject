@@ -83,5 +83,17 @@ namespace Server.Controllers
 
             return NoContent();
         }
+
+        #region Comunication Between Server and Client
+
+        [HttpGet]
+        [Route("AsAString")]
+        public string GetInformationCardsAsStr()
+        {
+            return repository.GetAllInformationCardsAsStr();
+        }
+
+
+        #endregion
     }
 }
