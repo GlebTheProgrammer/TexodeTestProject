@@ -53,35 +53,35 @@
 
                         <!--Menu Buttons-->
                         <StackPanel DockPanel.Dock="Top">
-                            <Button x:Name="Dashboard_Btn" Style="{StaticResource menuButton}" Click="Dashboard_Btn_Click">
+                            <Button x:Name="Dashboard_Btn" Style="{StaticResource menuButton}" Click="Dashboard_Btn_Click" IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
                                     <Icon:PackIconMaterial Kind="HomeVariant" Style="{StaticResource menuButtonIcon}"/>
                                     <TextBlock Text="Dashboard"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button x:Name="AddNewCard_Btn" Style="{StaticResource menuButton}" Click="AddNewCard_Btn_Click">
+                            <Button x:Name="AddNewCard_Btn" Style="{StaticResource menuButton}" Click="AddNewCard_Btn_Click" IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
                                     <Icon:PackIconMaterial Kind="PlusBoxMultiple" Style="{StaticResource menuButtonIcon}"/>
                                     <TextBlock Text="Add New Card"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button x:Name="UpdateCard_Btn" Style="{StaticResource menuButton}" Click="UpdateCard_Btn_Click">
+                            <Button x:Name="UpdateCard_Btn" Style="{StaticResource menuButton}" Click="UpdateCard_Btn_Click" IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
                                     <Icon:PackIconMaterial Kind="Update" Style="{StaticResource menuButtonIcon}"/>
                                     <TextBlock Text="Update Card"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button x:Name="DeleteCard_Btn" Style="{StaticResource menuButton}" Click="DeleteCard_Btn_Click_1">
+                            <Button x:Name="DeleteCard_Btn" Style="{StaticResource menuButton}" Click="DeleteCard_Btn_Click_1" IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
                                     <Icon:PackIconMaterial Kind="DeleteSweep" Style="{StaticResource menuButtonIcon}"/>
                                     <TextBlock Text="Delete Card"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button x:Name="Connection_Btn" Style="{StaticResource menuButton}">
+                            <Button x:Name="Connection_Btn" Style="{StaticResource menuButton}" Click="Connection_Btn_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <Icon:PackIconMaterial Kind="Connection" Style="{StaticResource menuButtonIcon}"/>
                                     <TextBlock Text="Connection"/>
@@ -344,7 +344,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
-                    
+
                     <RowDefinition/>
                 </Grid.RowDefinitions>
 
@@ -357,7 +357,7 @@
                             Foreground="Black" Height="85" Width="106"/>
 
                 <TextBlock x:Name="connection_StatusHeader" Text="Connect To The Server To Continue" Grid.Row="3" FontSize="16" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black" Height="58" Width="auto" TextWrapping="Wrap"/>
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Black" Width="auto" Height="auto" TextWrapping="Wrap"/>
 
 
                 <Button x:Name="Connect_Btn" Grid.Row="4" Style="{StaticResource connectionButton}" Click="Connect_Btn_Click">

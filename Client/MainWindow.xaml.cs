@@ -1,5 +1,7 @@
-﻿using Client.Models;
+﻿using Client.DTOs;
+using Client.Models;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 using Server.DTOs;
 using System;
 using System.Collections.Generic;
@@ -28,29 +30,28 @@ namespace Client
     {
         ObservableCollection<InformationCard> cards = new ObservableCollection<InformationCard>();
         ObservableCollection<InformationCardReadDto> cardsReadable = new ObservableCollection<InformationCardReadDto>();
-        public List<bool> boolarray = new List<bool>() { false, true, false, true, false};
         public MainWindow()
         {
             InitializeComponent();
 
-            var converter = new BrushConverter();
+            //var converter = new BrushConverter();
 
-            cards.Add(new InformationCard { Id = 0, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            cardsReadable.Add(new InformationCardReadDto { Index = 1, Name = "Cat", Image = (Brush)converter.ConvertFromString("#1098ad")});
-            cards.Add(new InformationCard { Id = 1, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            cardsReadable.Add(new InformationCardReadDto { Index = 2, Name = "Abort", Image = (Brush)converter.ConvertFromString("#1098bc") });
-            cards.Add(new InformationCard { Id = 2, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            cardsReadable.Add(new InformationCardReadDto { Index = 3, Name = "Baby", Image = (Brush)converter.ConvertFromString("#1098ef") });
-            cards.Add(new InformationCard { Id = 3, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            cardsReadable.Add(new InformationCardReadDto { Index = 4, Name = "Eagle", Image = (Brush)converter.ConvertFromString("#1098ad") });
-            cards.Add(new InformationCard { Id = 4, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            cardsReadable.Add(new InformationCardReadDto { Index = 5, Name = "Doctor", Image = (Brush)converter.ConvertFromString("#1098bc") });
+            //cards.Add(new InformationCard { Id = 0, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
+            //cardsReadable.Add(new InformationCardReadDto { Index = 1, Name = "Cat", Image = (Brush)converter.ConvertFromString("#1098ad")});
+            //cards.Add(new InformationCard { Id = 1, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
+            //cardsReadable.Add(new InformationCardReadDto { Index = 2, Name = "Abort", Image = (Brush)converter.ConvertFromString("#1098bc") });
+            //cards.Add(new InformationCard { Id = 2, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
+            //cardsReadable.Add(new InformationCardReadDto { Index = 3, Name = "Baby", Image = (Brush)converter.ConvertFromString("#1098ef") });
+            //cards.Add(new InformationCard { Id = 3, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
+            //cardsReadable.Add(new InformationCardReadDto { Index = 4, Name = "Eagle", Image = (Brush)converter.ConvertFromString("#1098ad") });
+            //cards.Add(new InformationCard { Id = 4, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
+            //cardsReadable.Add(new InformationCardReadDto { Index = 5, Name = "Doctor", Image = (Brush)converter.ConvertFromString("#1098bc") });
 
             //Create DataGrid Items Info
 
             informationCardsDataGrid.ItemsSource = cardsReadable;
 
-            RefreshInformationCardsCounter();
+            //RefreshInformationCardsCounter();
         }
 
         private bool isMaximized = false;
@@ -112,26 +113,34 @@ namespace Client
 
             addingNewCard_section.Visibility = Visibility.Visible;
         }
-        private void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)
+        private void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // Method needs to send request to the server
         {
-            cards.Add(new InformationCard
+            SendInformationCardToTheServer(new InformationCardCreateDto
             {
-                Id = cards.LastOrDefault() == null ? 0 : cards.LastOrDefault().Id + 1,
                 Name = textboxCardName.Text,
-                Image = ConvertImageToBytes((BitmapImage)informationCardImage.Source)
+                //Image = Encoding.Default.GetString(ConvertImageToBytes((BitmapImage)informationCardImage.Source))
+                Image = Convert.ToBase64String(ConvertImageToBytes((BitmapImage)informationCardImage.Source))
             });
 
-            ImageBrush imageBrush = new ImageBrush();
-            imageBrush.ImageSource = GenerateImageFromBytes(cards.Last().Image);
+            //cards.Add(new InformationCard
+            //{
+            //    Id = cards.LastOrDefault() == null ? 0 : cards.LastOrDefault().Id + 1,
+            //    Name = textboxCardName.Text,
+            //    Image = ConvertImageToBytes((BitmapImage)informationCardImage.Source)
+            //});
 
-            cardsReadable.Add(new InformationCardReadDto
-            {
-                Index = cardsReadable.LastOrDefault() == null ? 1 : GetMaxIndex() + 1,
-                Name = cards.LastOrDefault().Name,
-                Image = imageBrush,
-            });
+            //ImageBrush imageBrush = new ImageBrush();
+            //imageBrush.ImageSource = GenerateImageFromBytes(cards.Last().Image);
+
+            //cardsReadable.Add(new InformationCardReadDto
+            //{
+            //    Index = cardsReadable.LastOrDefault() == null ? 1 : GetMaxIndex() + 1,
+            //    Name = cards.LastOrDefault().Name,
+            //    Image = imageBrush,
+            //});
 
             RefreshInformationCardsCounter();
+            informationCardsDataGrid.Items.Refresh();
             SetAddNewCardPageToTheDefaultState();
             Unsort();
             Dashboard_Btn_Click(sender, e);
@@ -271,6 +280,14 @@ namespace Client
 
 
         }
+        private void Connection_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            dashboard_section.Visibility = Visibility.Hidden;
+            addingNewCard_section.Visibility = Visibility.Hidden;
+            updatingExistingCard_section.Visibility = Visibility.Hidden;
+
+            connection_section.Visibility = Visibility.Visible;
+        }
 
         //#region Control Methods
         private void RefreshInformationCardsCounter()
@@ -375,39 +392,172 @@ namespace Client
             existingInformationCardImage.Source = null;
         }
 
+        private void ActivateAppFunctionalityAfterSuccessConnectionWereSet()
+        {
+            Dashboard_Btn.IsEnabled = true;
+            AddNewCard_Btn.IsEnabled = true;
+            UpdateCard_Btn.IsEnabled = true;
+            DeleteCard_Btn.IsEnabled = true;
+
+            Connect_Btn.IsEnabled = false;
+
+            RefreshInformationCardsCounter();
+            informationCardsDataGrid.Items.Refresh();
+        }
+
+        private void RedirectToTheConnectionPageWithAnException(HttpRequestException ex)
+        {
+            Dashboard_Btn.IsEnabled = false;
+            AddNewCard_Btn.IsEnabled = false;
+            UpdateCard_Btn.IsEnabled = false;
+            DeleteCard_Btn.IsEnabled = false;
+
+            Connect_Btn.IsEnabled = true;
+
+            connection_StatusCode.Foreground = Brushes.Red;
+            connection_StatusCode.Text = "503";
+
+            connection_StatusHeader.Foreground = Brushes.Red;
+            connection_StatusHeader.Text = ex.Message;
+
+            dashboard_section.Visibility = Visibility.Hidden;
+            addingNewCard_section.Visibility = Visibility.Hidden;
+            updatingExistingCard_section.Visibility = Visibility.Hidden;
+
+            connection_section.Visibility = Visibility.Visible;
+        }
+
+        private void RedirectToTheConnectionPage(string responseCode, string responseHeader)
+        {
+            Dashboard_Btn.IsEnabled = false;
+            AddNewCard_Btn.IsEnabled = false;
+            UpdateCard_Btn.IsEnabled = false;
+            DeleteCard_Btn.IsEnabled = false;
+
+            Connect_Btn.IsEnabled = true;
+
+            connection_StatusCode.Foreground = Brushes.Red;
+            connection_StatusCode.Text = responseCode;
+
+            connection_StatusHeader.Foreground = Brushes.Red;
+            connection_StatusHeader.Text = responseHeader;
+
+            dashboard_section.Visibility = Visibility.Hidden;
+            addingNewCard_section.Visibility = Visibility.Hidden;
+            updatingExistingCard_section.Visibility = Visibility.Hidden;
+
+            connection_section.Visibility = Visibility.Visible;
+        }
+
         //#endregion
 
 
         #region Connect To The Server Methods
 
-        private async void Connect_Btn_Click(object sender, RoutedEventArgs e)
+        private async void GetInformationCardsFromTheServer(HttpClient clientt)
         {
-            using(HttpClient client = new HttpClient())
+            using (HttpClient client = new HttpClient())
             {
+
+
                 HttpResponseMessage? response = null;
                 try
                 {
+                    // Sending for the request; waiting for the response
+
                     response = await client.GetAsync("http://localhost:63697/api/InformationCards/AsAString");
                 }
-                catch(HttpRequestException ex)
+                catch (HttpRequestException ex)
                 {
-                    connection_StatusCode.Foreground = Brushes.Red;
-                    connection_StatusCode.Text = "503";
+                    // If server is not running yet or wrong uri was set
 
-                    connection_StatusHeader.Foreground = Brushes.Red;
-                    connection_StatusHeader.Text = ex.Message;
+                    // Changing response textboxes colors & texts which will show the error to the user
+
+                    RedirectToTheConnectionPageWithAnException(ex);
 
                     return;
                 }
 
                 response.EnsureSuccessStatusCode();
 
-                if(response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode)
                 {
-                    connection_StatusHeader.Text = await response.Content.ReadAsStringAsync();
+                    // If we received successful response
+
+                    // Refreshing cards data if it is exists locally
+
+                    cards = new ObservableCollection<InformationCard>();
+                    cardsReadable = new ObservableCollection<InformationCardReadDto>();
+
+                    // Changing response textboxes colors and texts to the response attributes
+
+                    connection_StatusCode.Foreground = Brushes.Green;
+                    connection_StatusCode.Text = response.StatusCode.ToString();
+
+                    connection_StatusHeader.Foreground = Brushes.Green;
+                    connection_StatusHeader.Text = response.Headers.ToString();
+
+                    // Getting data from the response as a string (Models with their fields as a string based on JSON)
+
+                    string jsonData = await response.Content.ReadAsStringAsync();
+
+                    // Saving data to the existing transfer models (Image as a string)
+
+                    var cardsFromServer = JsonConvert.DeserializeObject<List<InformationCardTransferDto>>(jsonData);
+
+                    // If there was no data in the response -> making an empty list as a response
+
+                    if (cardsFromServer == null)
+                        cardsFromServer = new List<InformationCardTransferDto>();
+
+                    // Rewriting data from the response to the local storage
+
+                    int counter = 1;
+
+                    foreach (var item in cardsFromServer)
+                    {
+                        // Adding data into normal card models collection (Image as a byte array)
+                        cards.Add(new InformationCard
+                        {
+                            Id = item.Id,
+                            Name = item.Name,
+
+                            // Converting string with bytes into bytes array
+
+                            Image = Convert.FromBase64String(item.Image),
+                        });
+
+                        // Generating brush image from the byte array
+
+                        ImageBrush imageBrush = new ImageBrush();
+                        imageBrush.ImageSource = GenerateImageFromBytes(cards.Last().Image);
+
+                        // Adding data into card read models collection (Image as a brush)
+
+                        cardsReadable.Add(new InformationCardReadDto
+                        {
+                            Index = counter,
+                            Name = item.Name,
+                            Image = imageBrush
+                        });
+
+                        counter++;
+                    }
+
+                    // Calling method wich will allow user to work with app. Also doing some datagrid configuration stuff 
+
+                    informationCardsDataGrid.ItemsSource = cardsReadable;
+                    informationCardsDataGrid.Items.Refresh();
+
+
+                    ActivateAppFunctionalityAfterSuccessConnectionWereSet();
                 }
                 else
                 {
+                    // If we received error response
+
+                    // Changing response textboxes colors & texts which will show the error with it's specific code
+
                     connection_StatusCode.Foreground = Brushes.Red;
                     connection_StatusCode.Text = response.StatusCode.ToString();
 
@@ -415,6 +565,54 @@ namespace Client
                     connection_StatusHeader.Text = response.Headers.ToString();
                 }
             }
+        }
+
+        private void Connect_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                GetInformationCardsFromTheServer(client);
+            }
+        }
+
+        private async void SendInformationCardToTheServer(InformationCardCreateDto cardCreateDto)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                var uri = $"{{\"{nameof(cardCreateDto.Image)}\": \"{cardCreateDto.Image}\",\"{nameof(cardCreateDto.Name)}\": \"{cardCreateDto.Name}\"}}";
+                HttpContent content = new StringContent(uri, Encoding.UTF8, "application/json");
+
+
+                HttpResponseMessage? response = null;
+                try
+                {
+                    // Sending for the request; waiting for the response
+
+                    response = await client.PostAsync("http://localhost:63697/api/InformationCards", content);
+                }
+                catch (HttpRequestException ex)
+                {
+                    // If server was down or wrong uri was set
+
+                    RedirectToTheConnectionPageWithAnException(ex);
+
+                    return;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    GetInformationCardsFromTheServer(client);
+                }
+                else
+                {
+                    // If we received error response
+
+                    RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
+                }
+            }
+        
         }
 
 

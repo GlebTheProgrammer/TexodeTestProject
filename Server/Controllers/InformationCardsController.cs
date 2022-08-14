@@ -13,11 +13,12 @@ namespace Server.Controllers
     {
         private readonly IInformationCardRepo repository;
         private readonly IMapper mapper;
-
+        private int IdProvider;
         public InformationCardsController(IInformationCardRepo repository, IMapper mapper)
         {
             this.repository = repository;
             this.mapper = mapper;
+            IdProvider = repository.GetAllInformationCards().LastOrDefault() == null ? 0 : repository.GetAllInformationCards().LastOrDefault().Id + 1;
         }
 
         //GET api/InformationCards
@@ -46,7 +47,9 @@ namespace Server.Controllers
         public ActionResult<InformationCardReadDto> AddNewInformationCard(InformationCardCreateDto cardCreateDto)
         {
             var card = mapper.Map<InformationCard>(cardCreateDto);
-            card.Id = repository.GetAllInformationCards().LastOrDefault() == null ? 0 : repository.GetAllInformationCards().LastOrDefault().Id + 1;
+            card.Id = IdProvider;
+
+            IdProvider++;
 
             repository.CreateInformationCard(card);
 
