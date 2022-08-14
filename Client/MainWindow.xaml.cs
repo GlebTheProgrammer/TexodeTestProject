@@ -115,29 +115,21 @@ namespace Client
         }
         private void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // Method needs to send request to the server
         {
+            string source = informationCardImage.Source.ToString();
+
+            string filePath = (informationCardImage.Source as BitmapImage).UriSource.LocalPath;
+
+            string newFileName = $"{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_" + System.IO.Path.GetFileName(source);
+
+            string destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
+
+            File.Copy(filePath, destination, true);
+
             SendInformationCardToTheServer(new InformationCardCreateDto
             {
                 Name = textboxCardName.Text,
-                //Image = Encoding.Default.GetString(ConvertImageToBytes((BitmapImage)informationCardImage.Source))
-                Image = Convert.ToBase64String(ConvertImageToBytes((BitmapImage)informationCardImage.Source))
+                Image = destination
             });
-
-            //cards.Add(new InformationCard
-            //{
-            //    Id = cards.LastOrDefault() == null ? 0 : cards.LastOrDefault().Id + 1,
-            //    Name = textboxCardName.Text,
-            //    Image = ConvertImageToBytes((BitmapImage)informationCardImage.Source)
-            //});
-
-            //ImageBrush imageBrush = new ImageBrush();
-            //imageBrush.ImageSource = GenerateImageFromBytes(cards.Last().Image);
-
-            //cardsReadable.Add(new InformationCardReadDto
-            //{
-            //    Index = cardsReadable.LastOrDefault() == null ? 1 : GetMaxIndex() + 1,
-            //    Name = cards.LastOrDefault().Name,
-            //    Image = imageBrush,
-            //});
 
             RefreshInformationCardsCounter();
             informationCardsDataGrid.Items.Refresh();
@@ -217,7 +209,7 @@ namespace Client
 
             existingCardIndex_TextBlock.Text =  Convert.ToString(existingCard.Index);
             textboxExistingCardName.Text = existingCard.Name;
-            existingInformationCardImage.Source = GenerateImageFromBytes(cards[existingCard.Index-1].Image);
+            existingInformationCardImage.Source = new ImageSourceConverter().ConvertFromString(cards[existingCard.Index - 1].Image) as ImageSource;
 
             Unsort();
         }
@@ -233,12 +225,18 @@ namespace Client
         {
             int indexOfUpdatingCard = int.Parse(existingCardIndex_TextBlock.Text);
 
+            string source = existingInformationCardImage.Source.ToString();
+            string destination = System.IO.Path.Combine("/Data/Images/", System.IO.Path.GetFileName(source));
+
+            File.Delete(cards[indexOfUpdatingCard - 1].Image);
+            File.Copy(source, destination, true);
+
             //Update main card model
             cards[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
-            cards[indexOfUpdatingCard - 1].Image = ConvertImageToBytes((BitmapImage)existingInformationCardImage.Source);
+            cards[indexOfUpdatingCard - 1].Image = destination;
 
             ImageBrush imageBrush = new ImageBrush();
-            imageBrush.ImageSource = GenerateImageFromBytes(cards[indexOfUpdatingCard - 1].Image);
+            imageBrush.ImageSource = new ImageSourceConverter().ConvertFromString(cards[indexOfUpdatingCard - 1].Image) as ImageSource;
 
             //Update cardReadDTO model
             cardsReadable[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
@@ -274,7 +272,7 @@ namespace Client
 
             existingCardIndex_TextBlock.Text = Convert.ToString(existingCard.Index);
             textboxExistingCardName.Text = existingCard.Name;
-            existingInformationCardImage.Source = GenerateImageFromBytes(cards[existingCard.Index - 1].Image);
+            existingInformationCardImage.Source = new ImageSourceConverter().ConvertFromString(cards[existingCard.Index - 1].Image) as ImageSource;
 
             Unsort();
 
@@ -287,6 +285,10 @@ namespace Client
             updatingExistingCard_section.Visibility = Visibility.Hidden;
 
             connection_section.Visibility = Visibility.Visible;
+        }
+        private void Connect_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            GetInformationCardsFromTheServer();
         }
 
         //#region Control Methods
@@ -454,7 +456,7 @@ namespace Client
 
         #region Connect To The Server Methods
 
-        private async void GetInformationCardsFromTheServer(HttpClient clientt)
+        private async void GetInformationCardsFromTheServer()
         {
             using (HttpClient client = new HttpClient())
             {
@@ -465,7 +467,8 @@ namespace Client
                 {
                     // Sending for the request; waiting for the response
 
-                    response = await client.GetAsync("http://localhost:63697/api/InformationCards/AsAString");
+                    //response = await client.GetAsync("http://localhost:63697/api/InformationCards/AsAString");
+                    response = await client.GetAsync("http://localhost:63697/api/InformationCards");
                 }
                 catch (HttpRequestException ex)
                 {
@@ -524,13 +527,13 @@ namespace Client
 
                             // Converting string with bytes into bytes array
 
-                            Image = Convert.FromBase64String(item.Image),
+                            Image = item.Image
                         });
 
                         // Generating brush image from the byte array
 
                         ImageBrush imageBrush = new ImageBrush();
-                        imageBrush.ImageSource = GenerateImageFromBytes(cards.Last().Image);
+                        imageBrush.ImageSource = new ImageSourceConverter().ConvertFromString(cards.Last().Image) as ImageSource;
 
                         // Adding data into card read models collection (Image as a brush)
 
@@ -567,14 +570,6 @@ namespace Client
             }
         }
 
-        private void Connect_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                GetInformationCardsFromTheServer(client);
-            }
-        }
-
         private async void SendInformationCardToTheServer(InformationCardCreateDto cardCreateDto)
         {
             using (HttpClient client = new HttpClient())
@@ -603,7 +598,7 @@ namespace Client
 
                 if (response.IsSuccessStatusCode)
                 {
-                    GetInformationCardsFromTheServer(client);
+                    GetInformationCardsFromTheServer();
                 }
                 else
                 {
