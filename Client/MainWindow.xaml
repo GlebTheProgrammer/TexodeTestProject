@@ -10,7 +10,7 @@
     </Window.Resources>
 
 
-    <Border Background="#eff2f7" CornerRadius="30" MouseDown="Border_MouseDown" MouseLeftButtonDown="Border_MouseLeftButtonDown">
+    <Border Background="#fffafafa" CornerRadius="30" MouseDown="Border_MouseDown" MouseLeftButtonDown="Border_MouseLeftButtonDown">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>
@@ -30,7 +30,7 @@
                     <Icon:PackIconMaterial Kind="Menu" Width="15" Height="15"/>
                 </Button>
 
-                <Border Grid.Row="1" Background="#623ed0" CornerRadius="0 50 0 30">
+                <Border Grid.Row="1" Background="#2a2a2a" CornerRadius="0 50 0 30">
                     <DockPanel>
                         <!--Menu Logo-->
                         <Border Width="80" Height="80" Padding="3" Background="White" CornerRadius="100"
@@ -45,11 +45,11 @@
                         <!--Menu Titles-->
                         <TextBlock Text="Cards Storage" Foreground="White" FontSize="20" FontWeight="SemiBold"
                                    DockPanel.Dock="Top" TextAlignment="Center" Margin="5 25 0 10"/>
-                        <TextBlock Text="Menu" Foreground="#d0bfff" FontSize="15" FontWeight="SemiBold"
+                        <TextBlock Text="Menu" Foreground="AliceBlue" FontSize="15" FontWeight="SemiBold"
                                    DockPanel.Dock="Top" TextAlignment="Center"/>
 
                         <!--Menu Separator-->
-                        <Separator Margin="25" DockPanel.Dock="Top" Height="0.8" Background="#7e5fdc"/>
+                        <Separator Margin="25" DockPanel.Dock="Top" Height="0.8" Background="#3f3f3f"/>
 
                         <!--Menu Buttons-->
                         <StackPanel DockPanel.Dock="Top">
@@ -180,8 +180,6 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-
-
                         <DataGridTemplateColumn Header="Operations" IsReadOnly="True" Width="auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -199,8 +197,6 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-
-
 
                     </DataGrid.Columns>
                 </DataGrid>
@@ -228,7 +224,7 @@
                            HorizontalAlignment="Left" Foreground="#121518"/>
 
                 <Grid Width="300" HorizontalAlignment="Left" Grid.Row="3">
-                    <TextBlock Margin="15 10" VerticalAlignment="Center" Foreground="#b0b9c6" IsHitTestVisible="False"
+                    <TextBlock Margin="15 10" VerticalAlignment="Center" Foreground="#545454" IsHitTestVisible="False"
                                Panel.ZIndex="1" Text="Enter Card Name ..."
                                Visibility="{Binding ElementName=textboxCardName,Path=Text.IsEmpty,Converter={StaticResource BoolToVis}}"/>
 
