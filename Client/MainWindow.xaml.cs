@@ -13,14 +13,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace Client
 {
@@ -32,21 +27,30 @@ namespace Client
         ObservableCollection<InformationCard> cards = new ObservableCollection<InformationCard>();
         ObservableCollection<InformationCardReadDto> cardsReadable = new ObservableCollection<InformationCardReadDto>();
         bool connectedToTheServer = false;
+        private bool isMaximized = false;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            //Create DataGrid Items Info
+            // Source for data grid
 
             informationCardsDataGrid.ItemsSource = cardsReadable;
         }
 
-        private bool isMaximized = false;
+        #region User Interaction with Form
+
+
+        // Form scrin methods
+
         private void Border_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if(e.ClickCount == 2)
+            // Click on the form 2 times
+
+            if (e.ClickCount == 2)
             {
-                if(isMaximized)
+                // Set normal scrin size
+                if (isMaximized)
                 {
                     this.WindowState = WindowState.Normal;
                     this.Width = 1080;
@@ -54,6 +58,7 @@ namespace Client
 
                     isMaximized = false;
                 }
+                // Set maximum scrin size
                 else
                 {
                     this.WindowState = WindowState.Maximized;
@@ -64,194 +69,47 @@ namespace Client
         }
         private void Border_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if(e.ChangedButton == MouseButton.Left)
+            if (e.ChangedButton == MouseButton.Left)
             {
                 this.DragMove();
             }
         }
-        private async void Logout_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            await DeleteAllNotUsedImages();
-            Application.Current.Shutdown();
-        }
-        private void insertImage_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files|*.bmp;*.jpg;*.png";
-            openFileDialog.FilterIndex = 1;
-            if(openFileDialog.ShowDialog() == true)
-            {
-                mockImage.Visibility = Visibility.Hidden;
-                informationCardImage.Source = new BitmapImage(new Uri(openFileDialog.FileName));
-            }
-        }
+
+
+        // Left menu buttons
+
         private void Dashboard_Btn_Click(object sender, RoutedEventArgs e)
         {
+            // Hide all panels
+
             addingNewCard_section.Visibility = Visibility.Hidden;
             updatingExistingCard_section.Visibility = Visibility.Hidden;
             connection_section.Visibility = Visibility.Hidden;
+
+            // Make deshboard panel visible
 
             dashboard_section.Visibility = Visibility.Visible;
         }
         private void AddNewCard_Btn_Click(object sender, RoutedEventArgs e)
         {
+            // Hide all panels
+
             dashboard_section.Visibility = Visibility.Hidden;
             updatingExistingCard_section.Visibility = Visibility.Hidden;
             connection_section.Visibility = Visibility.Hidden;
 
+            // Make AddNewCard panel visible
+
             addingNewCard_section.Visibility = Visibility.Visible;
-        }
-        private async void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // Method needs to send request to the server
-        {
-            if(textboxCardName.Text == string.Empty || informationCardImage.Source == null)
-            {
-                MessageBox.Show("Both Name and Image are required!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string source = informationCardImage.Source.ToString();
-
-            string filePath = (informationCardImage.Source as BitmapImage).UriSource.LocalPath;
-
-            string newFileName = $"{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_" + System.IO.Path.GetFileName(source);
-
-            string destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
-
-            File.Copy(filePath, destination, true);
-
-            Dashboard_Btn_Click(sender, e);
-
-            await SendInformationCardToTheServer(new InformationCardCreateDto
-            {
-                Name = textboxCardName.Text,
-                Image = destination
-            });
-
-            informationCardsDataGrid.Items.Refresh();
-            RefreshInformationCardsCounter();
-            Unsort();
-
-            SetAddNewCardPageToTheDefaultState();
-
-            return;
-        }
-        private void sortedByName_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            SortByName();
-        }
-        private void unsorted_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            Unsort();
-        }
-        private void selectAll_CheckBox_ClickChecked(object sender, RoutedEventArgs e)
-        {
-            foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
-                card.IsSelected = true;
-        }
-        private void selectAll_CheckBox_ClickUnchecked(object sender, RoutedEventArgs e)
-        {
-            foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
-                card.IsSelected = false;
-                
-        }
-        private async void DeleteCard_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            InformationCardReadDto? card = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
-
-            int id = cards[card.Index - 1].Id;
-            string imagePath = cards[card.Index - 1].Image;
-
-            await DeleteInformationCardFromTheServer(id, imagePath);
-        }
-        private async void DeleteCard_Btn_Click_1(object sender, RoutedEventArgs e)
-        {
-            var selectedCards = new List<InformationCardReadDto>();
-
-            foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
-                if(card.IsSelected == true)
-                    selectedCards.Add(card);
-
-            if (selectedCards.Count == 0)
-                return;
-
-            List<int> ids = new List<int>();
-            List<string> imagePaths = new List<string>();
-            for (int i = selectedCards.Count - 1; i >= 0; i--)
-            {
-                ids.Add(cards[selectedCards[i].Index - 1].Id);
-                imagePaths.Add(cards[selectedCards[i].Index - 1].Image);
-            }
-
-            await DeleteMultipleInformationCardsFromTheServer(ids);
-
-        }
-        private void SelectCard_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            InformationCardReadDto card = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
-
-            if (card.IsSelected == true)
-                card.IsSelected = false;
-            else
-                card.IsSelected = true;
-        }
-        private void EditCard_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            InformationCardReadDto existingCard = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
-
-            dashboard_section.Visibility = Visibility.Hidden;
-            updatingExistingCard_section.Visibility = Visibility.Visible;
-
-            existingCardIndex_TextBlock.Text =  Convert.ToString(existingCard.Index);
-            textboxExistingCardName.Text = existingCard.Name;
-            existingInformationCardImage.Source = new ImageSourceConverter().ConvertFromString(cards[existingCard.Index - 1].Image) as ImageSource;
-
-            Unsort();
-        }
-        private void insertNewImage_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Image files|*.bmp;*.jpg;*.png";
-            openFileDialog.FilterIndex = 1;
-            if (openFileDialog.ShowDialog() == true)
-                existingInformationCardImage.Source = new BitmapImage(new Uri(openFileDialog.FileName));
-        }
-        private async void updateInformationCard_Btn_Click(object sender, RoutedEventArgs e)
-        {
-            if (textboxExistingCardName.Text == string.Empty || existingInformationCardImage.Source == null)
-            {
-                MessageBox.Show("Name field is required and must not be empty!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            int indexOfUpdatingCard = int.Parse(existingCardIndex_TextBlock.Text);
-
-            string source = existingInformationCardImage.Source.ToString();
-            string filePath = (existingInformationCardImage.Source as BitmapImage).UriSource.LocalPath;
-            string newFileName = $"{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_" + System.IO.Path.GetFileName(source);
-
-            string destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
-
-            File.Copy(filePath, destination, true);
-
-            Dashboard_Btn_Click(sender, e);
-
-            await UpdateInformationCardDataOnTheServer(cards[indexOfUpdatingCard-1].Id, new InformationCardUpdateDto
-            {
-                Name = textboxExistingCardName.Text,
-                Image = destination
-            });
-
-            informationCardsDataGrid.Items.Refresh();
-            Unsort();
-
-            SetEditExistingCardPageToTheDefaultState();
-
-            return;
         }
         private void UpdateCard_Btn_Click(object sender, RoutedEventArgs e)
         {
+            // Add counters for items wich user has selected in datagrid
+
             int counterOfSelectedItems = 0;
             int selectedItemIndex = 0;
+
+            // Count selected items
 
             foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
             {
@@ -262,123 +120,335 @@ namespace Client
                 }
             }
 
+            // If user didnt select or selected more then 1 item in datagrid -> unable to update
+
             if (counterOfSelectedItems > 1 || counterOfSelectedItems == 0)
+            {
+                MessageBox.Show("Please, select only one item!", "Instruction", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
+            }
+
+            // If everything is correct -> get selected item data
 
             InformationCardReadDto existingCard = cardsReadable.FirstOrDefault(card => card.Index == selectedItemIndex);
 
+            // Hide other panels
+
             dashboard_section.Visibility = Visibility.Hidden;
+            addingNewCard_section.Visibility= Visibility.Hidden;
+            connection_section.Visibility = Visibility.Hidden;
+
+            // Make an update panel visible
+
             updatingExistingCard_section.Visibility = Visibility.Visible;
+
+            // Show existing card data to the user via form components (index is a hidden field)
 
             existingCardIndex_TextBlock.Text = Convert.ToString(existingCard.Index);
             textboxExistingCardName.Text = existingCard.Name;
             existingInformationCardImage.Source = new ImageSourceConverter().ConvertFromString(cards[existingCard.Index - 1].Image) as ImageSource;
 
-            Unsort();
+            // Unsort datagrid items (information cards)
 
+            Unsort();
+        }
+        private async void DeleteCard_Btn_Click_1(object sender, RoutedEventArgs e)
+        {
+            // Create a variable to store all items wich need to be deleted
+
+            var selectedCards = new List<InformationCardReadDto>();
+
+            // Add all items wich user has selected in the datagrid
+
+            foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
+                if (card.IsSelected == true)
+                    selectedCards.Add(card);
+
+            // If there is no items user has selected -> Do nothing
+
+            if (selectedCards.Count == 0)
+            {
+                MessageBox.Show("Select at list 1 item to be deleted!", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // If everything is alright -> getting ids and store then in the list
+
+            List<int> ids = new List<int>();
+
+            for (int i = selectedCards.Count - 1; i >= 0; i--)
+                ids.Add(cards[selectedCards[i].Index - 1].Id);
+
+            // Start method wich will delete all models with provided id on the server side
+
+            await DeleteMultipleInformationCardsFromTheServer(ids);
 
         }
         private void Connection_Btn_Click(object sender, RoutedEventArgs e)
         {
+            // Hide all panels
+
             dashboard_section.Visibility = Visibility.Hidden;
             addingNewCard_section.Visibility = Visibility.Hidden;
             updatingExistingCard_section.Visibility = Visibility.Hidden;
 
+            // Make connection panel visible
+
             connection_section.Visibility = Visibility.Visible;
         }
-        private async void Connect_Btn_Click(object sender, RoutedEventArgs e)
+        private async void Logout_Btn_Click(object sender, RoutedEventArgs e)
         {
+            //Delete all not used local images
+
+            await DeleteAllNotUsedImages();
+
+            //Exit the application
+
+            Application.Current.Shutdown();
+        }
+
+
+        // Dashboard pannel buttons
+
+        private void sortedByName_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Sort existing in data grid items
+
+            SortByName();
+        }
+        private void unsorted_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Unort existing in data grid items
+
+            Unsort();
+        }
+        private void selectAll_CheckBox_ClickChecked(object sender, RoutedEventArgs e)
+        {
+            // Click on checkbox when it's not selected -> select all items in the datagrid 
+
+            foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
+                card.IsSelected = true;
+        }
+        private void selectAll_CheckBox_ClickUnchecked(object sender, RoutedEventArgs e)
+        {
+            // Click on checkbox when it's not selected -> unselect all items in the datagrid
+
+            foreach (InformationCardReadDto card in informationCardsDataGrid.ItemsSource)
+                card.IsSelected = false;
+
+        }
+
+        // Datagrid buttons
+        private void SelectCard_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the selected item data
+
+            InformationCardReadDto card = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
+
+            // Change it's isSelected property
+
+            if (card.IsSelected == true)
+                card.IsSelected = false;
+            else
+                card.IsSelected = true;
+        }
+        private async void DeleteCard_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the selected item data
+
+            InformationCardReadDto? card = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
+
+            // Getting item id
+
+            int id = cards[card.Index - 1].Id;
+
+            // Delete Information Card data on the server side
+
+            await DeleteInformationCardFromTheServer(id);
+        }
+        private void EditCard_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Get the selected item data
+
+            InformationCardReadDto existingCard = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
+
+            // Hide dashboard panel and make edit panel visible
+
+            dashboard_section.Visibility = Visibility.Hidden;
+            updatingExistingCard_section.Visibility = Visibility.Visible;
+
+            // Show existing card data to the user via form components (index is hidden)
+
+            existingCardIndex_TextBlock.Text = Convert.ToString(existingCard.Index);
+            textboxExistingCardName.Text = existingCard.Name;
+            existingInformationCardImage.Source = new ImageSourceConverter().ConvertFromString(cards[existingCard.Index - 1].Image) as ImageSource;
+
+            // Unsort all datagrid items
+
+            Unsort();
+        }
+
+
+        // AddNewCard panel buttons
+
+        private void insertImage_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Getting the image
+
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Image files|*.bmp;*.jpg;*.png";
+            openFileDialog.FilterIndex = 1;
+
+            // If image was selected successully
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                // Hide mock image
+
+                mockImage.Visibility = Visibility.Hidden;
+
+                // Change the source for the form item and show selected image to the user 
+
+                informationCardImage.Source = new BitmapImage(new Uri(openFileDialog.FileName));
+            }
+        }
+        private async void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // This method calls POST method
+        {
+            // If user didnt provide both name and image for the information card -> show the error and do nothing
+
+            if (textboxCardName.Text == string.Empty || textboxCardName.Text.Length > 50 || informationCardImage.Source == null)
+            {
+                MessageBox.Show("Both Name and Image are required! Name must be not more then 50 symbols length!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // If everything is alright -> get selected image local path
+
+            string source = informationCardImage.Source.ToString();
+            string filePath = (informationCardImage.Source as BitmapImage).UriSource.LocalPath;
+
+            // Generate new name for the selected image file
+
+            string newFileName = $"{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_" + System.IO.Path.GetFileName(source);
+
+            // Generate new file path where our image will be stored 
+
+            string destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
+
+            // Copy image file to the client project directory
+
+            File.Copy(filePath, destination, true);
+
+            // Get back to the dashboard panel
+
+            Dashboard_Btn_Click(sender, e);
+
+            // Send POST request to the server
+
+            await SendInformationCardToTheServer(new InformationCardCreateDto
+            {
+                Name = textboxCardName.Text,
+                Image = destination
+            });
+
+            // Get back AddNewCard panel to the default state
+
+            SetAddNewCardPageToTheDefaultState();
+        }
+
+
+        // UpdateExistingCard panel buttons
+
+        private void insertNewImage_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            // Getting the image
+
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Image files|*.bmp;*.jpg;*.png";
+            openFileDialog.FilterIndex = 1;
+
+            // If image was selected successully -> change source of the current image wich is shown to the user
+
+            if (openFileDialog.ShowDialog() == true)
+                existingInformationCardImage.Source = new BitmapImage(new Uri(openFileDialog.FileName));
+        }
+        private async void updateInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // This method calls PUT method
+        {
+            // If user didnt provide both name and image for the information card -> show the error and do nothing
+
+            if (textboxExistingCardName.Text == string.Empty || textboxCardName.Text.Length > 50 || existingInformationCardImage.Source == null)
+            {
+                MessageBox.Show("Name field is required and must not be empty!  Name must be not more then 50 symbols length!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // If everything is alright -> getting the update card index from a hidden field
+
+            int indexOfUpdatingCard = int.Parse(existingCardIndex_TextBlock.Text);
+
+            // Getting image source
+
+            string source = existingInformationCardImage.Source.ToString();
+            string destination = string.Empty;
+
+            // If new image was selected -> save it
+
+            if (!source.Contains("../../../Data/Images"))
+            {
+                // Getting new image local path
+
+                string filePath = (existingInformationCardImage.Source as BitmapImage).UriSource.LocalPath;
+
+                // Generate new image file name 
+
+                string newFileName = $"{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_" + System.IO.Path.GetFileName(source);
+
+                // Path where new image must be stored
+
+                destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
+
+                // Save new image on the client side
+
+                File.Copy(filePath, destination, true);
+            }
+            else
+                destination = source;
+
+            // Get back to the dashboar panel
+
+            Dashboard_Btn_Click(sender, e);
+
+            // Send PUT method to the server, where we provide id of the updating card and new data
+
+            await UpdateInformationCardDataOnTheServer(cards[indexOfUpdatingCard-1].Id, new InformationCardUpdateDto
+            {
+                Name = textboxExistingCardName.Text,
+                Image = destination
+            });
+
+            // Set EditCard panel to the default state (clear all the components)
+
+            SetEditExistingCardPageToTheDefaultState();
+        }
+
+
+        // Connection panel buttons
+
+        private async void Connect_Btn_Click(object sender, RoutedEventArgs e) // This method calls GET method
+        {
+            // Try to get information from the server. Sending GET request to the server
+
             await GetInformationCardsFromTheServer();
         }
 
-        //#region Control Methods
-        private void RefreshInformationCardsCounter()
-        {
-            string result = cards.Count == 0 ? "No Any Cards Available" : $"{cards.Count} Cards Available";
-            Counter_Textbox.Text = result;
+        #endregion
 
-            return;
-        }
-
-        private byte[] ConvertImageToBytes(BitmapImage image)
-        {
-            byte[] data;
-            JpegBitmapEncoder encoder = new JpegBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(image));
-            using (MemoryStream ms = new MemoryStream())
-            {
-                encoder.Save(ms);
-                data = ms.ToArray();
-            }
-
-            return data;
-        }
-
-        private BitmapImage GenerateImageFromBytes(byte[] imageData)
-        {
-            if(imageData == null || imageData.Length == 0)
-                return null;
-
-            var image = new BitmapImage();
-
-            using (MemoryStream stream = new MemoryStream(imageData))
-            {
-                stream.Position = 0;
-                image.BeginInit();
-                image.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.UriSource = null;
-                image.StreamSource = stream;
-                image.EndInit();
-            }
-
-            image.Freeze();
-
-            return image;
-        }
-
-        private void SetAddNewCardPageToTheDefaultState()
-        {
-            textboxCardName.Text = string.Empty;
-            mockImage.Visibility = Visibility.Visible;
-            informationCardImage.Source = null;
-        }
-
-        private int GetMaxIndex()
-        {
-            return cardsReadable.Max(card => card.Index);
-        }
-
-        private void SortByName()
-        {
-            var orderedList = cardsReadable.OrderBy(x => x.Name).ToList();
-
-            int counter = 0;
-            foreach (var card in orderedList)
-            {
-                cardsReadable[counter] = card;
-                counter++;
-            }
-
-            return;
-        }
-
-        private void Unsort()
-        {
-            var unorderedList = cardsReadable.OrderBy(x => x.Index).ToList();
-
-            int counter = 0;
-            foreach (var card in unorderedList)
-            {
-                cardsReadable[counter] = card;
-                counter++;
-            }
-
-            return;
-        }
+        #region Control Methods
 
         private void RefreshIndexes()
         {
+            // Give default indexes to the cardRead variables
+
             int index = 1;
             foreach (var card in cardsReadable)
             {
@@ -386,9 +456,57 @@ namespace Client
                 index++;
             }
         }
+        private void RefreshInformationCardsCounter()
+        {
+            // Set dashboard counter value which shows current number of cards
 
+            string result = cards.Count == 0 ? "No Any Cards Available" : $"{cards.Count} Cards Available";
+            Counter_Textbox.Text = result;
+        }
+
+        private void SortByName()
+        {
+            // Create list of sorted cards
+
+            var orderedList = cardsReadable.OrderBy(x => x.Name).ToList();
+
+            // Refresh our main collection of cards with sorted items
+
+            int counter = 0;
+            foreach (var card in orderedList)
+            {
+                cardsReadable[counter] = card;
+                counter++;
+            }
+        }
+        private void Unsort()
+        {
+            // Create list of unsorted cards
+
+            var unorderedList = cardsReadable.OrderBy(x => x.Index).ToList();
+
+            // Refresh our main collection of cards with sorted items
+
+            int counter = 0;
+            foreach (var card in unorderedList)
+            {
+                cardsReadable[counter] = card;
+                counter++;
+            }
+        }
+
+        private void SetAddNewCardPageToTheDefaultState()
+        {
+            // Clear all panel components and set them to the default state
+
+            textboxCardName.Text = string.Empty;
+            mockImage.Visibility = Visibility.Visible;
+            informationCardImage.Source = null;
+        }
         private void SetEditExistingCardPageToTheDefaultState()
         {
+            // Set EditCard panel counter value which shows current number of cards
+
             existingCardIndex_TextBlock.Text = string.Empty;
             textboxExistingCardName.Text = string.Empty;
             existingInformationCardImage.Source = null;
@@ -396,25 +514,33 @@ namespace Client
 
         private void ActivateAppFunctionalityAfterSuccessConnectionWereSet()
         {
+            // Enable left menu buttons after successful connection were set
+
             Dashboard_Btn.IsEnabled = true;
             AddNewCard_Btn.IsEnabled = true;
             UpdateCard_Btn.IsEnabled = true;
             DeleteCard_Btn.IsEnabled = true;
 
+            // Disable connect button on the connection panel
+
             Connect_Btn.IsEnabled = false;
-
-            RefreshInformationCardsCounter();
-            informationCardsDataGrid.Items.Refresh();
         }
-
-        private void RedirectToTheConnectionPageWithAnException(HttpRequestException ex)
+        private void RedirectToTheConnectionPageWithAnException(HttpRequestException ex) // Exception happened with server
         {
+            connectedToTheServer = false;
+
+            // Disable all the left menu buttons wich allow user to work with data wich stores on the server side
+
             Dashboard_Btn.IsEnabled = false;
             AddNewCard_Btn.IsEnabled = false;
             UpdateCard_Btn.IsEnabled = false;
             DeleteCard_Btn.IsEnabled = false;
 
+            // Enable connection button
+
             Connect_Btn.IsEnabled = true;
+
+            // Set the connection status and show exception to the user
 
             connection_StatusCode.Foreground = Brushes.Red;
             connection_StatusCode.Text = "503";
@@ -422,21 +548,40 @@ namespace Client
             connection_StatusHeader.Foreground = Brushes.Red;
             connection_StatusHeader.Text = ex.Message;
 
+            // Hide all other panels
+
             dashboard_section.Visibility = Visibility.Hidden;
             addingNewCard_section.Visibility = Visibility.Hidden;
             updatingExistingCard_section.Visibility = Visibility.Hidden;
 
-            connection_section.Visibility = Visibility.Visible;
-        }
+            // Make connection panel visible
 
-        private void RedirectToTheConnectionPage(string responseCode, string responseHeader)
+            connection_section.Visibility = Visibility.Visible;
+
+            // Kill all the processes wich can cause data leak 
+
+            System.Diagnostics.Process.GetCurrentProcess().Kill();
+
+            // Show error message box to the user
+
+            MessageBox.Show("Error occured when sending request to the server.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        private void RedirectToTheConnectionPage(string responseCode, string responseHeader) // Exception happened with processing server response
         {
+            connectedToTheServer = false;
+
+            // Disable all the left menu buttons wich allow user to work with data wich stores on the server side
+
             Dashboard_Btn.IsEnabled = false;
             AddNewCard_Btn.IsEnabled = false;
             UpdateCard_Btn.IsEnabled = false;
             DeleteCard_Btn.IsEnabled = false;
 
+            // Enable connection button
+
             Connect_Btn.IsEnabled = true;
+
+            // Set the connection status and show exception to the user
 
             connection_StatusCode.Foreground = Brushes.Red;
             connection_StatusCode.Text = responseCode;
@@ -444,52 +589,47 @@ namespace Client
             connection_StatusHeader.Foreground = Brushes.Red;
             connection_StatusHeader.Text = responseHeader;
 
+            // Hide all other panels
+
             dashboard_section.Visibility = Visibility.Hidden;
             addingNewCard_section.Visibility = Visibility.Hidden;
             updatingExistingCard_section.Visibility = Visibility.Hidden;
 
-            connection_section.Visibility = Visibility.Visible;
-        }
+            // Make connection panel visible
 
-        private void DeleteImagesLocally(List<string> imagePaths, int NumberOfRetries, int DelayOnRetryIn_ms)
-        {
-            foreach (string imagePath in imagePaths)
-            {
-                for (int i = 1; i <= NumberOfRetries; ++i)
-                {
-                    try
-                    {
-                        // Do stuff with file
-                        File.Delete(imagePath);
-                        break; // When done we can break loop
-                    }
-                    catch (IOException) when (i <= NumberOfRetries)
-                    {
-                        // You may check error code to filter some exceptions, not every error
-                        // can be recovered.
-                        Thread.Sleep(DelayOnRetryIn_ms);
-                    }
-                }
-            }
+            connection_section.Visibility = Visibility.Visible;
+
+            // Kill all the processes wich can cause data leak 
+
+            System.Diagnostics.Process.GetCurrentProcess().Kill();
+
+            // Show error message box to the user
+
+            MessageBox.Show("Error occured when processing server response.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private Task DeleteAllNotUsedImages()
         {
+            // If we didnt connected to the server and dont know anything about models wich server stores -> dont touch local images
             if (!connectedToTheServer)
                 return Task.CompletedTask;
+
+            // Otherwise -> make an array of all images paths with names 
 
             string dirPath = @"../../../Data/Images";
             string[] fileNames = Directory.GetFiles(dirPath);
 
             for (int i = 0; i < fileNames.Length; i++)
             {
+                // If there is no such image in the card models -> try to delete this image
+
                 if (cards.FirstOrDefault(card => card.Image == $"{dirPath}/{fileNames[i]}") == null)
                 {
                     try
                     {
                         File.Delete($"{dirPath}/Client/{fileNames[i]}");
                     }
-                    catch (IOException)
+                    catch (Exception)
                     {
                         continue;
                     }
@@ -498,11 +638,58 @@ namespace Client
             return Task.CompletedTask;
         }
 
-        //#endregion
-
+        #endregion
 
         #region Connect To The Server Methods
 
+        // POST method (Create)
+        private async Task SendInformationCardToTheServer(InformationCardCreateDto cardCreateDto)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                // Create a POST method uri, in wich include our createDto model
+
+                var uri = $"{{\"{nameof(cardCreateDto.Image)}\": \"{cardCreateDto.Image}\",\"{nameof(cardCreateDto.Name)}\": \"{cardCreateDto.Name}\"}}";
+                HttpContent content = new StringContent(uri, Encoding.UTF8, "application/json");
+
+
+                HttpResponseMessage? response = null;
+                try
+                {
+                    // Sending for the request; waiting for the response
+
+                    response = await client.PostAsync("http://localhost:63697/api/InformationCards", content);
+                }
+                catch (HttpRequestException ex)
+                {
+                    // If server was down or wrong uri was set
+
+                    RedirectToTheConnectionPageWithAnException(ex);
+
+                    return;
+                }
+
+                // After we got response
+
+                response.EnsureSuccessStatusCode();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Data was saved successfully, get data from the server 
+
+                    await GetInformationCardsFromTheServer();
+                }
+                else
+                {
+                    // If we received error response
+
+                    RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
+                }
+            }
+
+        }
+
+        // GET method (Read)
         private async Task GetInformationCardsFromTheServer()
         {
             using (HttpClient client = new HttpClient())
@@ -510,16 +697,15 @@ namespace Client
                 HttpResponseMessage? response = null;
                 try
                 {
-                    // Sending for the request; waiting for the response
+                    // Sending the request; waiting for the response
 
-                    //response = await client.GetAsync("http://localhost:63697/api/InformationCards/AsAString");
                     response = await client.GetAsync("http://localhost:63697/api/InformationCards");
                 }
                 catch (HttpRequestException ex)
                 {
                     // If server is not running yet or wrong uri was set
 
-                    // Changing response textboxes colors & texts which will show the error to the user
+                    // Changing response textboxes colors & texts which will show the error to the user & redirect
 
                     RedirectToTheConnectionPageWithAnException(ex);
 
@@ -558,24 +744,43 @@ namespace Client
                     if (cardsFromServer == null)
                         cardsFromServer = new List<InformationCardTransferDto>();
 
-                    // Rewriting data from the response to the local storage
+                    // Setting up counters
 
                     int counter = 1;
+                    int j = 0;
+
+                    // Get all local stored images paths
+
+                    string dirPath = "../../../Data/Images/";
+
+                    DirectoryInfo di = new DirectoryInfo($"{dirPath}");
+                    FileInfo[] files = di.GetFiles();
+                    List<string> images = new List<string>();
+                    foreach (FileInfo file in files)
+                    {
+                        images.Add($"{dirPath}{file.Name}");
+                    }
+
+                    // Rewriting data from the response to the local storage
 
                     foreach (var item in cardsFromServer)
                     {
-                        // Adding data into normal card models collection (Image as a byte array)
+                        // If we dont have an image on the client side for one of the server response models -> move to the next one
+
+                        if (!images.Contains(item.Image))
+                            continue;
+
+                        //Otherwise
+
+                        // Adding data into normal card models collection
                         cards.Add(new InformationCard
                         {
                             Id = item.Id,
                             Name = item.Name,
-
-                            // Converting string with bytes into bytes array
-
                             Image = item.Image
                         });
 
-                        // Generating brush image from the byte array
+                        // Generating brush image
 
                         ImageBrush imageBrush = new ImageBrush();
                         imageBrush.ImageSource = new ImageSourceConverter().ConvertFromString(cards.Last().Image) as ImageSource;
@@ -592,13 +797,11 @@ namespace Client
                         counter++;
                     }
 
-                    // Calling method wich will allow user to work with app. Also doing some datagrid configuration stuff 
-
-                    informationCardsDataGrid.ItemsSource = cardsReadable;
-                    informationCardsDataGrid.Items.Refresh();
-
+                    // Calling methods wich will allow user to work with app
 
                     ActivateAppFunctionalityAfterSuccessConnectionWereSet();
+                    informationCardsDataGrid.ItemsSource = cardsReadable;
+
                     connectedToTheServer = true;
 
                 }
@@ -615,16 +818,22 @@ namespace Client
                     connection_StatusHeader.Text = response.Headers.ToString();
                 }
             }
+
+            // Refresh data
+
             RefreshIndexes();
             RefreshInformationCardsCounter();
             informationCardsDataGrid.Items.Refresh();
         }
 
-        private async Task SendInformationCardToTheServer(InformationCardCreateDto cardCreateDto)
+        // PUT method (Update)
+        private async Task UpdateInformationCardDataOnTheServer(int id, InformationCardUpdateDto cardUpdateDto)
         {
             using (HttpClient client = new HttpClient())
             {
-                var uri = $"{{\"{nameof(cardCreateDto.Image)}\": \"{cardCreateDto.Image}\",\"{nameof(cardCreateDto.Name)}\": \"{cardCreateDto.Name}\"}}";
+                // Create a PUT method uri, in wich include our updateDto model
+
+                var uri = $"{{\"{nameof(cardUpdateDto.Image)}\": \"{cardUpdateDto.Image}\",\"{nameof(cardUpdateDto.Name)}\": \"{cardUpdateDto.Name}\"}}";
                 HttpContent content = new StringContent(uri, Encoding.UTF8, "application/json");
 
 
@@ -633,7 +842,7 @@ namespace Client
                 {
                     // Sending for the request; waiting for the response
 
-                    response = await client.PostAsync("http://localhost:63697/api/InformationCards", content);
+                    response = await client.PutAsync($"http://localhost:63697/api/InformationCards/{id}", content);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -644,10 +853,14 @@ namespace Client
                     return;
                 }
 
+                // After we got response
+
                 response.EnsureSuccessStatusCode();
 
-                if (response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
+                    // Model was updated successfully, get data from the server 
+
                     await GetInformationCardsFromTheServer();
                 }
                 else
@@ -657,10 +870,10 @@ namespace Client
                     RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
                 }
             }
-        
         }
 
-        private async Task DeleteInformationCardFromTheServer(int id, string imagePath)
+        // DELETE single item method (Delete)
+        private async Task DeleteInformationCardFromTheServer(int id)
         {
             using (HttpClient client = new HttpClient())
             {
@@ -680,12 +893,15 @@ namespace Client
                     return;
                 }
 
+                // After we got response
+
                 response.EnsureSuccessStatusCode();
 
-                if (response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
+                    // Model was deleted successfully, get data from the server 
+
                     await GetInformationCardsFromTheServer();
-                    return;
                 }
                 else
                 {
@@ -696,7 +912,8 @@ namespace Client
             }
         }
 
-        private async Task  DeleteMultipleInformationCardsFromTheServer(List<int> ids)
+        // DELETE multiple items method (Delete)
+        private async Task DeleteMultipleInformationCardsFromTheServer(List<int> ids)
         {
             foreach (var id in ids)
             {
@@ -718,10 +935,14 @@ namespace Client
                         return;
                     }
 
+                    // After we got response
+
                     response.EnsureSuccessStatusCode();
 
-                    if (response.IsSuccessStatusCode)
+                    if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NotFound)
                     {
+                        // If it was successful -> move to the next model
+
                         continue;
                     }
                     else
@@ -735,49 +956,10 @@ namespace Client
                 }
             }
 
+            // Models were deleted successfully, get data from the server 
+
             await GetInformationCardsFromTheServer();
-           
         }
-
-        private async Task UpdateInformationCardDataOnTheServer(int id,InformationCardUpdateDto cardUpdateDto)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                var uri = $"{{\"{nameof(cardUpdateDto.Image)}\": \"{cardUpdateDto.Image}\",\"{nameof(cardUpdateDto.Name)}\": \"{cardUpdateDto.Name}\"}}";
-                HttpContent content = new StringContent(uri, Encoding.UTF8, "application/json");
-
-
-                HttpResponseMessage? response = null;
-                try
-                {
-                    // Sending for the request; waiting for the response
-
-                    response = await client.PutAsync($"http://localhost:63697/api/InformationCards/{id}", content);
-                }
-                catch (HttpRequestException ex)
-                {
-                    // If server was down or wrong uri was set
-
-                    RedirectToTheConnectionPageWithAnException(ex);
-
-                    return;
-                }
-
-                response.EnsureSuccessStatusCode();
-
-                if (response.IsSuccessStatusCode)
-                {
-                    await GetInformationCardsFromTheServer();
-                }
-                else
-                {
-                    // If we received error response
-
-                    RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
-                }
-            }
-        }
-
 
         #endregion
     }

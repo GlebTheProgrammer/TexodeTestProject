@@ -86,7 +86,7 @@ namespace Server.Controllers
 
             return NoContent();
         }
-
+            
         #region Comunication Between Server and Client
 
         [HttpGet]

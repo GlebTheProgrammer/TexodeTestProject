@@ -151,21 +151,6 @@
                 <TextBlock x:Name="Counter_Textbox" Text="68 Cards Available" Grid.Row="4" FontSize="18" FontWeight="SemiBold"
                            Foreground="#121518" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 
-                <TextBlock Text="Search" Grid.Row="4" FontSize="13" FontWeight="SemiBold" Margin="0 0 215 0"
-                           Foreground="#121518" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-
-
-
-                <!--Filter Textbox-->
-                <Grid Width="200" HorizontalAlignment="Right" Grid.Row="4">
-                    <TextBlock Margin="15 0" VerticalAlignment="Center" Foreground="#b0b9c6" IsHitTestVisible="False"
-                               Panel.ZIndex="1" Text="Search in Cards ..."
-                               Visibility="{Binding ElementName=txtFilter,Path=Text.IsEmpty,Converter={StaticResource BoolToVis}}"/>
-
-                    <TextBox x:Name="txtFilter" Style="{StaticResource textboxFilter}"/>
-
-                </Grid>
-
                 <!--Cards Datagrid-->
                 <DataGrid Style="{DynamicResource DataGridStyle1}" CellStyle="{DynamicResource DataGridCellStyle1}" ColumnHeaderStyle="{DynamicResource DataGridColumnHeaderStyle1}" RowStyle="{DynamicResource DataGridRowStyle1}" Grid.Row="5" x:Name="informationCardsDataGrid">
                     <DataGrid.Columns>
