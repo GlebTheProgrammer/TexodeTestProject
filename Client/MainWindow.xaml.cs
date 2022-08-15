@@ -103,6 +103,12 @@ namespace Client
         }
         private async void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // Method needs to send request to the server
         {
+            if(textboxCardName.Text == string.Empty || informationCardImage.Source == null)
+            {
+                MessageBox.Show("Both Name and Image are required!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             string source = informationCardImage.Source.ToString();
 
             string filePath = (informationCardImage.Source as BitmapImage).UriSource.LocalPath;
@@ -211,6 +217,12 @@ namespace Client
         }
         private async void updateInformationCard_Btn_Click(object sender, RoutedEventArgs e)
         {
+            if (textboxExistingCardName.Text == string.Empty || existingInformationCardImage.Source == null)
+            {
+                MessageBox.Show("Name field is required and must not be empty!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             int indexOfUpdatingCard = int.Parse(existingCardIndex_TextBlock.Text);
 
             string source = existingInformationCardImage.Source.ToString();
@@ -219,8 +231,6 @@ namespace Client
 
             string destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
 
-            //File.Delete(cards[indexOfUpdatingCard - 1].Image);
-            //File.Copy(source, destination, true);
             File.Copy(filePath, destination, true);
 
             Dashboard_Btn_Click(sender, e);
@@ -231,21 +241,8 @@ namespace Client
                 Image = destination
             });
 
-
-            ////Update main card model
-            //cards[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
-            //cards[indexOfUpdatingCard - 1].Image = destination;
-
-            //ImageBrush imageBrush = new ImageBrush();
-            //imageBrush.ImageSource = new ImageSourceConverter().ConvertFromString(cards[indexOfUpdatingCard - 1].Image) as ImageSource;
-
-            ////Update cardReadDTO model
-            //cardsReadable[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
-            //cardsReadable[indexOfUpdatingCard - 1].Image = imageBrush;
-
             informationCardsDataGrid.Items.Refresh();
             Unsort();
-            //Dashboard_Btn_Click(sender, e);
 
             SetEditExistingCardPageToTheDefaultState();
 
