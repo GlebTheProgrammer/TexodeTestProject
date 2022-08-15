@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,28 +31,14 @@ namespace Client
     {
         ObservableCollection<InformationCard> cards = new ObservableCollection<InformationCard>();
         ObservableCollection<InformationCardReadDto> cardsReadable = new ObservableCollection<InformationCardReadDto>();
+        bool connectedToTheServer = false;
         public MainWindow()
         {
             InitializeComponent();
 
-            //var converter = new BrushConverter();
-
-            //cards.Add(new InformationCard { Id = 0, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            //cardsReadable.Add(new InformationCardReadDto { Index = 1, Name = "Cat", Image = (Brush)converter.ConvertFromString("#1098ad")});
-            //cards.Add(new InformationCard { Id = 1, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            //cardsReadable.Add(new InformationCardReadDto { Index = 2, Name = "Abort", Image = (Brush)converter.ConvertFromString("#1098bc") });
-            //cards.Add(new InformationCard { Id = 2, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            //cardsReadable.Add(new InformationCardReadDto { Index = 3, Name = "Baby", Image = (Brush)converter.ConvertFromString("#1098ef") });
-            //cards.Add(new InformationCard { Id = 3, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            //cardsReadable.Add(new InformationCardReadDto { Index = 4, Name = "Eagle", Image = (Brush)converter.ConvertFromString("#1098ad") });
-            //cards.Add(new InformationCard { Id = 4, Name = "Cat", Image = new byte[] { 1, 2, 3 } });
-            //cardsReadable.Add(new InformationCardReadDto { Index = 5, Name = "Doctor", Image = (Brush)converter.ConvertFromString("#1098bc") });
-
             //Create DataGrid Items Info
 
             informationCardsDataGrid.ItemsSource = cardsReadable;
-
-            //RefreshInformationCardsCounter();
         }
 
         private bool isMaximized = false;
@@ -82,8 +69,9 @@ namespace Client
                 this.DragMove();
             }
         }
-        private void Logout_Btn_Click(object sender, RoutedEventArgs e)
+        private async void Logout_Btn_Click(object sender, RoutedEventArgs e)
         {
+            await DeleteAllNotUsedImages();
             Application.Current.Shutdown();
         }
         private void insertImage_Btn_Click(object sender, RoutedEventArgs e)
@@ -113,7 +101,7 @@ namespace Client
 
             addingNewCard_section.Visibility = Visibility.Visible;
         }
-        private void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // Method needs to send request to the server
+        private async void SaveInformationCard_Btn_Click(object sender, RoutedEventArgs e)  // Method needs to send request to the server
         {
             string source = informationCardImage.Source.ToString();
 
@@ -125,17 +113,19 @@ namespace Client
 
             File.Copy(filePath, destination, true);
 
-            SendInformationCardToTheServer(new InformationCardCreateDto
+            Dashboard_Btn_Click(sender, e);
+
+            await SendInformationCardToTheServer(new InformationCardCreateDto
             {
                 Name = textboxCardName.Text,
                 Image = destination
             });
 
-            RefreshInformationCardsCounter();
             informationCardsDataGrid.Items.Refresh();
-            SetAddNewCardPageToTheDefaultState();
+            RefreshInformationCardsCounter();
             Unsort();
-            Dashboard_Btn_Click(sender, e);
+
+            SetAddNewCardPageToTheDefaultState();
 
             return;
         }
@@ -158,18 +148,16 @@ namespace Client
                 card.IsSelected = false;
                 
         }
-        private void DeleteCard_Btn_Click(object sender, RoutedEventArgs e)
+        private async void DeleteCard_Btn_Click(object sender, RoutedEventArgs e)
         {
-            InformationCardReadDto card = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
+            InformationCardReadDto? card = (InformationCardReadDto)informationCardsDataGrid.SelectedItem;
 
-            cards.RemoveAt(card.Index-1);
-            cardsReadable.Remove(card);
+            int id = cards[card.Index - 1].Id;
+            string imagePath = cards[card.Index - 1].Image;
 
-            RefreshIndexes();
-            RefreshInformationCardsCounter();
-            informationCardsDataGrid.Items.Refresh();
+            await DeleteInformationCardFromTheServer(id, imagePath);
         }
-        private void DeleteCard_Btn_Click_1(object sender, RoutedEventArgs e)
+        private async void DeleteCard_Btn_Click_1(object sender, RoutedEventArgs e)
         {
             var selectedCards = new List<InformationCardReadDto>();
 
@@ -180,16 +168,16 @@ namespace Client
             if (selectedCards.Count == 0)
                 return;
 
-
+            List<int> ids = new List<int>();
+            List<string> imagePaths = new List<string>();
             for (int i = selectedCards.Count - 1; i >= 0; i--)
             {
-                cards.RemoveAt(selectedCards[i].Index-1);
-                cardsReadable.Remove(selectedCards[i]);
+                ids.Add(cards[selectedCards[i].Index - 1].Id);
+                imagePaths.Add(cards[selectedCards[i].Index - 1].Image);
             }
 
-            RefreshIndexes();
-            RefreshInformationCardsCounter();
-            informationCardsDataGrid.Items.Refresh();
+            await DeleteMultipleInformationCardsFromTheServer(ids);
+
         }
         private void SelectCard_Btn_Click(object sender, RoutedEventArgs e)
         {
@@ -286,9 +274,9 @@ namespace Client
 
             connection_section.Visibility = Visibility.Visible;
         }
-        private void Connect_Btn_Click(object sender, RoutedEventArgs e)
+        private async void Connect_Btn_Click(object sender, RoutedEventArgs e)
         {
-            GetInformationCardsFromTheServer();
+            await GetInformationCardsFromTheServer();
         }
 
         //#region Control Methods
@@ -451,17 +439,62 @@ namespace Client
             connection_section.Visibility = Visibility.Visible;
         }
 
+        private void DeleteImagesLocally(List<string> imagePaths, int NumberOfRetries, int DelayOnRetryIn_ms)
+        {
+            foreach (string imagePath in imagePaths)
+            {
+                for (int i = 1; i <= NumberOfRetries; ++i)
+                {
+                    try
+                    {
+                        // Do stuff with file
+                        File.Delete(imagePath);
+                        break; // When done we can break loop
+                    }
+                    catch (IOException) when (i <= NumberOfRetries)
+                    {
+                        // You may check error code to filter some exceptions, not every error
+                        // can be recovered.
+                        Thread.Sleep(DelayOnRetryIn_ms);
+                    }
+                }
+            }
+        }
+
+        private Task DeleteAllNotUsedImages()
+        {
+            if (!connectedToTheServer)
+                return Task.CompletedTask;
+
+            string dirPath = @"../../../Data/Images";
+            string[] fileNames = Directory.GetFiles(dirPath);
+
+            for (int i = 0; i < fileNames.Length; i++)
+            {
+                if (cards.FirstOrDefault(card => card.Image == $"{dirPath}/{fileNames[i]}") == null)
+                {
+                    try
+                    {
+                        File.Delete($"{dirPath}/Client/{fileNames[i]}");
+                    }
+                    catch (IOException)
+                    {
+                        continue;
+                    }
+                }
+            }
+            return Task.CompletedTask;
+        }
+
         //#endregion
 
 
         #region Connect To The Server Methods
 
-        private async void GetInformationCardsFromTheServer()
+        private async Task GetInformationCardsFromTheServer()
         {
             using (HttpClient client = new HttpClient())
             {
-
-
                 HttpResponseMessage? response = null;
                 try
                 {
@@ -554,6 +587,8 @@ namespace Client
 
 
                     ActivateAppFunctionalityAfterSuccessConnectionWereSet();
+                    connectedToTheServer = true;
+
                 }
                 else
                 {
@@ -568,9 +603,12 @@ namespace Client
                     connection_StatusHeader.Text = response.Headers.ToString();
                 }
             }
+            RefreshIndexes();
+            RefreshInformationCardsCounter();
+            informationCardsDataGrid.Items.Refresh();
         }
 
-        private async void SendInformationCardToTheServer(InformationCardCreateDto cardCreateDto)
+        private async Task SendInformationCardToTheServer(InformationCardCreateDto cardCreateDto)
         {
             using (HttpClient client = new HttpClient())
             {
@@ -598,7 +636,7 @@ namespace Client
 
                 if (response.IsSuccessStatusCode)
                 {
-                    GetInformationCardsFromTheServer();
+                    await GetInformationCardsFromTheServer();
                 }
                 else
                 {
@@ -608,6 +646,85 @@ namespace Client
                 }
             }
         
+        }
+
+        private async Task DeleteInformationCardFromTheServer(int id, string imagePath)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage? response = null;
+                try
+                {
+                    // Sending for the request; waiting for the response
+
+                    response = await client.DeleteAsync($"http://localhost:63697/api/InformationCards/{id}");
+                }
+                catch (HttpRequestException ex)
+                {
+                    // If server was down or wrong uri was set
+
+                    RedirectToTheConnectionPageWithAnException(ex);
+
+                    return;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await GetInformationCardsFromTheServer();
+                    return;
+                }
+                else
+                {
+                    // If we received error response
+
+                    RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
+                }
+            }
+        }
+
+        private async Task  DeleteMultipleInformationCardsFromTheServer(List<int> ids)
+        {
+            foreach (var id in ids)
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    HttpResponseMessage? response = null;
+                    try
+                    {
+                        // Sending for the request; waiting for the response
+
+                        response = await client.DeleteAsync($"http://localhost:63697/api/InformationCards/{id}");
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        // If server was down or wrong uri was set
+
+                        RedirectToTheConnectionPageWithAnException(ex);
+
+                        return;
+                    }
+
+                    response.EnsureSuccessStatusCode();
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        // If we received error response
+
+                        RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
+
+                        return;
+                    }
+                }
+            }
+
+            await GetInformationCardsFromTheServer();
+           
         }
 
 
