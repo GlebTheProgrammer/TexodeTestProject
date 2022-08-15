@@ -209,30 +209,45 @@ namespace Client
             if (openFileDialog.ShowDialog() == true)
                 existingInformationCardImage.Source = new BitmapImage(new Uri(openFileDialog.FileName));
         }
-        private void updateInformationCard_Btn_Click(object sender, RoutedEventArgs e)
+        private async void updateInformationCard_Btn_Click(object sender, RoutedEventArgs e)
         {
             int indexOfUpdatingCard = int.Parse(existingCardIndex_TextBlock.Text);
 
             string source = existingInformationCardImage.Source.ToString();
-            string destination = System.IO.Path.Combine("/Data/Images/", System.IO.Path.GetFileName(source));
+            string filePath = (existingInformationCardImage.Source as BitmapImage).UriSource.LocalPath;
+            string newFileName = $"{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_" + System.IO.Path.GetFileName(source);
 
-            File.Delete(cards[indexOfUpdatingCard - 1].Image);
-            File.Copy(source, destination, true);
+            string destination = System.IO.Path.Combine(@"../../../Data/Images/", newFileName);
 
-            //Update main card model
-            cards[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
-            cards[indexOfUpdatingCard - 1].Image = destination;
+            //File.Delete(cards[indexOfUpdatingCard - 1].Image);
+            //File.Copy(source, destination, true);
+            File.Copy(filePath, destination, true);
 
-            ImageBrush imageBrush = new ImageBrush();
-            imageBrush.ImageSource = new ImageSourceConverter().ConvertFromString(cards[indexOfUpdatingCard - 1].Image) as ImageSource;
+            Dashboard_Btn_Click(sender, e);
 
-            //Update cardReadDTO model
-            cardsReadable[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
-            cardsReadable[indexOfUpdatingCard - 1].Image = imageBrush;
+            await UpdateInformationCardDataOnTheServer(cards[indexOfUpdatingCard-1].Id, new InformationCardUpdateDto
+            {
+                Name = textboxExistingCardName.Text,
+                Image = destination
+            });
+
+
+            ////Update main card model
+            //cards[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
+            //cards[indexOfUpdatingCard - 1].Image = destination;
+
+            //ImageBrush imageBrush = new ImageBrush();
+            //imageBrush.ImageSource = new ImageSourceConverter().ConvertFromString(cards[indexOfUpdatingCard - 1].Image) as ImageSource;
+
+            ////Update cardReadDTO model
+            //cardsReadable[indexOfUpdatingCard - 1].Name = textboxExistingCardName.Text;
+            //cardsReadable[indexOfUpdatingCard - 1].Image = imageBrush;
+
+            informationCardsDataGrid.Items.Refresh();
+            Unsort();
+            //Dashboard_Btn_Click(sender, e);
 
             SetEditExistingCardPageToTheDefaultState();
-            informationCardsDataGrid.Items.Refresh();
-            Dashboard_Btn_Click(sender, e);
 
             return;
         }
@@ -725,6 +740,45 @@ namespace Client
 
             await GetInformationCardsFromTheServer();
            
+        }
+
+        private async Task UpdateInformationCardDataOnTheServer(int id,InformationCardUpdateDto cardUpdateDto)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                var uri = $"{{\"{nameof(cardUpdateDto.Image)}\": \"{cardUpdateDto.Image}\",\"{nameof(cardUpdateDto.Name)}\": \"{cardUpdateDto.Name}\"}}";
+                HttpContent content = new StringContent(uri, Encoding.UTF8, "application/json");
+
+
+                HttpResponseMessage? response = null;
+                try
+                {
+                    // Sending for the request; waiting for the response
+
+                    response = await client.PutAsync($"http://localhost:63697/api/InformationCards/{id}", content);
+                }
+                catch (HttpRequestException ex)
+                {
+                    // If server was down or wrong uri was set
+
+                    RedirectToTheConnectionPageWithAnException(ex);
+
+                    return;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await GetInformationCardsFromTheServer();
+                }
+                else
+                {
+                    // If we received error response
+
+                    RedirectToTheConnectionPage(response.StatusCode.ToString(), response.Headers.ToString());
+                }
+            }
         }
 
 
