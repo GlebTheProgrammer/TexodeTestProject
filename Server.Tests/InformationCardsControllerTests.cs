@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Server.Controllers;
+using Server.Data;
 using Server.DTOs;
 using Server.Interfaces;
 using Server.Models;
 using Server.Profiles;
 using System.Collections.Generic;
 using System.Linq;
+using System.Web.Http;
 using Xunit;
 
 namespace Server.Tests
@@ -86,17 +88,122 @@ namespace Server.Tests
 
             // Assert
 
-            // 1. Checking output result for object type as NotFoundObjectResult (404 Not Found)
-            var actionResult = Assert.IsAssignableFrom<NotFoundObjectResult>(result.Result);
-
-            // 2. Checking if data is right
-            var model = Assert.IsType<InformationCardReadDto>(actionResult.Value);
-            Assert.Equal(null, model);
+            // 1. Checking output result for type as NotFoundResult (404 Not Found)
+            var actionResult = Assert.IsAssignableFrom<NotFoundResult>(result.Result);
         }
 
+        [Fact]
+        public void AddNewInformationCard_WithInformationCardModel_ReturnCreatedAtRoute()
+        {
+            // Arrange
+            var repository = GenerateMockRepository();
 
+            var mapper = GenerateMockMapper();
+            var controller = GenerateMockController(repository, mapper);
 
+            // Act
 
+            ActionResult<InformationCardReadDto> actionResult = controller.AddNewInformationCard(new InformationCardCreateDto
+            {
+                Name = "Parrot",
+                Image = "../../../Data/Images/Parrot.png"
+            });
+
+            // Assert
+
+            // 1. Checking output result for type as CreatedAtRouteResult (201 Created At Route)
+            var atRouteResult = Assert.IsAssignableFrom<CreatedAtRouteResult>(actionResult.Result);
+
+        }
+
+        [Fact]
+        public void UpdateInformationCard_WithNewInformationCardModel_ReturnNoContent()
+        {
+            // Arrange
+            var repository = GenerateMockRepository();
+            repository.Setup(repo => repo.GetAllInformationCards()).Returns(GetTestCards());
+            repository.Setup(repo => repo.GetInformationCardById(1)).Returns(GetTestCards().FirstOrDefault(e => e.Id == 1));
+
+            var mapper = GenerateMockMapper();
+            var controller = GenerateMockController(repository, mapper);
+            // Act
+
+            ActionResult<InformationCardReadDto> actionResult = controller.UpdateInformationCard(1, new InformationCardUpdateDto
+            {
+                Name = "Parrot",
+                Image = "../../../Data/Images/Parrot.png"
+            });
+
+            // Assert
+
+            // 1. Checking output result for type as NoContentResult (204 No Content)
+            var updatedResult = Assert.IsAssignableFrom<NoContentResult>(actionResult.Result);
+
+        }
+
+        [Fact]
+        public void UpdateInformationCard_WithNewInformationCardModelWithNotExistingId_ReturnNotFound()
+        {
+            // Arrange
+            var repository = GenerateMockRepository();
+
+            var mapper = GenerateMockMapper();
+            var controller = GenerateMockController(repository, mapper);
+
+            // Act
+
+            ActionResult<InformationCardReadDto> actionResult = controller.UpdateInformationCard(10, new InformationCardUpdateDto
+            {
+                Name = "Parrot",
+                Image = "../../../Data/Images/Parrot.png"
+            });
+
+            // Assert
+
+            // 1. Checking output result for type as NotFoundResult (404 Not Found)
+            var updatedResult = Assert.IsAssignableFrom<NotFoundResult>(actionResult.Result);
+
+        }
+
+        [Fact]
+        public void DeleteInformationCard_WithAnExistingId_ReturnNoContent()
+        {
+            // Arrange
+            var repository = GenerateMockRepository();
+            repository.Setup(repo => repo.GetAllInformationCards()).Returns(GetTestCards());
+            repository.Setup(repo => repo.GetInformationCardById(1)).Returns(GetTestCards().FirstOrDefault(e => e.Id == 1));
+
+            var mapper = GenerateMockMapper();
+            var controller = GenerateMockController(repository, mapper);
+            // Act
+
+            ActionResult<InformationCardReadDto> actionResult = controller.DeleteInformationCard(1);
+
+            // Assert
+
+            // 1. Checking output result for type as NoContentResult (204 No Content)
+            var deletedResult = Assert.IsAssignableFrom<NoContentResult>(actionResult.Result);
+        }
+
+        [Fact]
+        public void DeleteInformationCard_WithNotExistingId_ReturnNotFound()
+        {
+            // Arrange
+            var repository = GenerateMockRepository();
+            repository.Setup(repo => repo.GetAllInformationCards()).Returns(GetTestCards());
+            repository.Setup(repo => repo.GetInformationCardById(1)).Returns(GetTestCards().FirstOrDefault(e => e.Id == 1));
+
+            var mapper = GenerateMockMapper();
+            var controller = GenerateMockController(repository, mapper);
+            // Act
+
+            ActionResult<InformationCardReadDto> actionResult = controller.DeleteInformationCard(10);
+
+            // Assert
+
+            // 1. Checking output result for type as NotFoundResult (404 Not Found)
+            var deletedResult = Assert.IsAssignableFrom<NotFoundResult>(actionResult.Result);
+        }
 
 
         private List<InformationCard> GetTestCards()
@@ -137,7 +244,6 @@ namespace Server.Tests
 
             return cards;
         }
-
         private Mock<IInformationCardRepo> GenerateMockRepository()
         {
             return new Mock<IInformationCardRepo>();
